@@ -47,6 +47,60 @@ body{
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
 <script>
 
+var issues,x,x2,y,circle,svg,width,height,n,maxRadius,color,color2,force,tick
+
+function swapFields(){
+  maxRadius = 12
+	var newNodes = d3.range(n).map(function(index) {
+		var c, v, i = ""
+
+		if((typeof(issues[index].fields.assignee) !== 'undefined') && ((issues[index].fields.assignee) !== null)){
+			c = issues[index].fields.assignee.displayName
+		}
+		v = issues[index].fields.watches.watchCount
+		j = issues[index].fields.votes.votes
+		i = issues[index].fields.issuetype.name
+		return {
+			issueData: issues[index],
+			radius: (Math.sqrt(v) * maxRadius) * .2,
+			color: color(c),
+			//color: color2(i),
+			cx: x2(i),
+			//cx: x(c),
+			cy: y(j)
+			};
+		});
+
+
+		circle = svg.selectAll("circle")
+			.data(newNodes)
+			//.enter().append("circle")
+			.attr("r", function(d) { return d.radius; })
+			.style("fill", function(d) { return d.color; })
+			.on("mouseover", function(d){
+				this.style.strokeWidth = "2px"
+				this.style.stroke = d3.rgb(d.color).darker().toString() 
+			})
+			.on("mouseout", function(d){
+				this.style.stroke = ""
+			})
+			.on("click", function(d){ 
+
+				info.selectAll("p").remove()
+				info.append("p").html("Key: "+d.issueData.key)
+				info.append("p").html("Summary: "+d.issueData.fields.summary)
+				info.append("p").html("Watches: "+d.issueData.fields.watches.watchCount)
+				info.append("p").html("Votes: "+d.issueData.fields.votes.votes)
+				info.append("p").html("Type: "+d.issueData.fields.issuetype.name)
+				info.append("p").html("Priority: "+d.issueData.fields.priority.id)
+				info.append("p").html("Labels: "+JSON.stringify(d.issueData.fields.labels))
+				info.append("p").html("Reporter: "+d.issueData.fields.reporter.displayName)
+				info.append("p").html("Assignee: "+d.issueData.fields.assignee.displayName)
+			})
+			.call(force.drag).transition()
+			      .duration(750);
+}
+
 myAjaxCall = $.ajax({
 	url: "./jira.json",
 	context: document.body,
@@ -55,12 +109,12 @@ myAjaxCall = $.ajax({
 }).done(function(data) {
 
 
-	var width = 1200,
-	height = 700,
-	padding = 6, // separation between nodes
+	width = 1350
+	height = 700
+	var padding = 6, // separation between nodes
 	maxRadius = 12;
 
-	var issues = data.issues
+	issues = data.issues
 
 	var issueTypes = issues.map(function(issues) { return issues.fields.issuetype.name; });
 	issueTypes = issueTypes.filter(function(v,i) { return issueTypes.indexOf(v) == i; });
@@ -80,18 +134,18 @@ myAjaxCall = $.ajax({
 
   var m = issueTypes.length
 
-	var color = d3.scale.category20()
+	color = d3.scale.category20()
 	.domain(issueAuthor);
 
-	var color2 = d3.scale.category10()
+	color2 = d3.scale.category10()
 	.domain(issueTypes);
 
-	var x = d3.scale.ordinal()
+	x = d3.scale.ordinal()
 	.domain(issueAuthor)
 	.rangePoints([0, width], 2);
 
 
-	var x2 = d3.scale.ordinal()
+	x2 = d3.scale.ordinal()
 	  .domain(issueTypes)
 		.rangePoints([0, width], 2);
 
@@ -100,7 +154,7 @@ myAjaxCall = $.ajax({
 			    .orient("bottom");
 
 
-	var y = d3.scale.ordinal()
+	y = d3.scale.ordinal()
 	  .domain(d3.range(maxVotes+1))
 		  .rangePoints([height, 0], 5);
 
@@ -111,7 +165,7 @@ myAjaxCall = $.ajax({
 
 
 
-	var n = issues.length-1
+	n = issues.length-1
 	var nodes = d3.range(n).map(function(index) {
 		var c, v, i = ""
 
@@ -132,7 +186,7 @@ myAjaxCall = $.ajax({
 		};
 	});
 
-	var force = d3.layout.force()
+	force = d3.layout.force()
 		.nodes(nodes)
 		.size([width, height])
 		.gravity(0)
@@ -141,7 +195,7 @@ myAjaxCall = $.ajax({
 		.start();
 
 
-	var svg = d3.select("#chart").append("svg")
+	svg = d3.select("#chart").append("svg")
 		.attr("width", width)
 		.attr("height", height);
 
@@ -168,15 +222,22 @@ myAjaxCall = $.ajax({
 			});
 
 		
-  var info = d3.select("#chart").append("div")
+   info = d3.select("#chart").append("div")
 	.attr("style", "position:absolute;right:220px;top:100px;right:5px;color:gray;pointer-events:none")
 	.attr("fill", "gray")
 
-	var circle = svg.selectAll("circle")
+	circle = svg.selectAll("circle")
 		.data(nodes)
 		.enter().append("circle")
 		.attr("r", function(d) { return d.radius; })
 		.style("fill", function(d) { return d.color; })
+		.on("mouseover", function(d){
+				this.style.strokeWidth = "2px"
+				this.style.stroke = d3.rgb(d.color).darker().toString() 
+				})
+				.on("mouseout", function(d){
+						this.style.stroke = ""
+					})
 		.on("click", function(d){ 
 			
 			info.selectAll("p").remove()
