@@ -1,0 +1,38 @@
+circle {
+  stroke: #fff;
+}
+.axis text {
+  font: 10px sans-serif;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+#legend {
+  padding: 0  0 0 1.5em;
+  display:inline-block;
+  position:absolute;
+  top:0px;
+  right:10px;
+}
+
+li.key {
+  border-top-width: 15px;
+  border-top-style: solid;
+  font-size: .75em;
+  width: 10%;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+li{
+  display:inline;
+}
+
+body{
+  font-family:helvetica
+}
