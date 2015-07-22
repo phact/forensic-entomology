@@ -36,3 +36,7 @@ li{
 body{
   font-family:helvetica
 }
+
+label{
+  pointer-events:none
+}

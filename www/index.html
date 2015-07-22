@@ -3,14 +3,16 @@
 </style>
 <head>
   <link rel="stylesheet" type="text/css" href="css/fe.css">
+  <link rel="stylesheet" href="http://demos.jquerymobile.com/1.4.1/css/themes/default/jquery.mobile-1.4.1.min.css">
 </head>
 <body>
 <div id="chart"></div>	
 <script src="http://d3js.org/d3.v3.min.js"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+<script src="http://demos.jquerymobile.com/1.4.1/js/jquery.mobile-1.4.1.min.js"></script>
 <script>
 
-var issues,x,x2,y,circle,svg,width,height,n,maxRadius,color,color2,force,tick
+var issues,x,x2,y,circle,svg,width,height,n,maxRadius,color,color2,force,tick,versions,pointReleases
 
 function swapFields(){
   maxRadius = 12
@@ -64,8 +66,84 @@ function swapFields(){
 			      .duration(750);
 }
 
+function getVersions(project){
+  myAjaxCall = $.ajax({
+    url: "versions.json?proj="+project,
+    context: document.body,
+    type: "GET",
+    contentType: "application/json; charset=utf-8",
+    }).done(function(data) {
+    console.log(data);
+
+    versions =[]
+    for (i=0; i<data.versions.length; i++){
+      versions.push(data.versions[i].name)
+    }
+
+    pointReleases = jQuery.map(versions, function(version, i){
+      return version.substr(0,3)
+    })
+    pointReleases = jQuery.unique(pointReleases);
+
+    versionOptions= []
+    for (i=0; i<pointReleases.length; i++){
+      versionOptions.push('<option value="' + pointReleases[i]+'">' + pointReleases[i] + '</option>');
+    }
+
+    $('#version-select').append(versionOptions.join('')).selectmenu('refresh');
+
+
+    $('#version-select').bind( "change", function(event, ui) {
+      getIssues(project, getAllVersions($("#version-select")[0].value))
+    }); 
+
+  });
+}
+
+function getProjects(){
+  myAjaxCall = $.ajax({
+    url: "projects.json",
+    context: document.body,
+    type: "GET",
+    contentType: "application/json; charset=utf-8",
+    }).done(function(data) {
+    console.log(data);
+
+    projects =[]
+    projectOptions = []
+    for (i=0; i<data.length; i++){
+      projects.push(data[i].key)
+      projectOptions.push('<option value="' + data[i].key+'">' + data[i].key + '</option>');
+    }
+    $('#project-select').find('option')
+        .remove()
+            .end()
+    $('#project-select').append(projectOptions.join('')).selectmenu('refresh');
+
+    $('#project-select').bind( "change", function(event, ui) {
+       getVersions($("#project-select")[0].value) 
+    });
+
+    });
+  }
+
+getProjects();
+
+function getAllVersions(pointVersion){
+  
+  list = jQuery.map(versions, function(version,i){
+    if (pointVersion == version.substr(0,3)){
+      return "\""+version+"\""
+    }
+  }).toString()
+
+  return list
+
+}
+
+function getIssues(project, selectedVersions){
 myAjaxCall = $.ajax({
-	url: "./jira.json",
+	url: "./jira.json?"+"proj="+project+"&versions="+selectedVersions,
 	context: document.body,
 	type: "GET",
 	contentType: "application/json; charset=utf-8",
@@ -157,7 +235,8 @@ myAjaxCall = $.ajax({
 		.on("tick", tick)
 		.start();
 
-
+  $("#chart").empty()
+    
 	svg = d3.select("#chart").append("svg")
 		.attr("width", width)
 		.attr("height", height);
@@ -307,5 +386,19 @@ myAjaxCall = $.ajax({
 	}	
 
 });
+}
 
 </script>
+<div class="ui-field-contain" style= "width: 40%;
+      position: absolute;
+        top: 0;
+        left: 20%;">
+  <label for="project-select">Select Project:</label>
+  <select name="project-select" id="project-select">
+  </select>
+
+  <label for="version-select">Select Version:</label>
+  <select  name="version-select" id="version-select">
+  </select>
+</div>
+</body>
