@@ -19,23 +19,23 @@ func makeRequest(api string, args string) http.HandlerFunc {
 
 		var proj string
 		proj = r.FormValue("proj")
-
+		//fmt.Printf("project: " + proj + "\n")
 		var versions string
 		versions = r.FormValue("versions")
 
 		//fmt.Printf("versions: " + versions)
 		//Issues for a particular version
 		if proj != "" && versions != "" {
-			//args = "jql=project+=+" + proj + "+AND+fixVersion+in+(" + "'2.2.0%20beta%201'" + ")+ORDER+BY+watchers+DESC&maxResults=100"
-			args = "jql=project+=+" + proj + "+AND+fixVersion+in+(" + url.QueryEscape(versions) + ")+ORDER+BY+watchers+DESC&maxResults=100"
+			//args = "?jql=project+=+" + proj + "+AND+fixVersion+in+(" + "'2.2.0%20beta%201'" + ")+ORDER+BY+watchers+DESC&maxResults=100"
+			args = "?jql=project+=+" + proj + "+AND+fixVersion+in+(" + url.QueryEscape(versions) + ")+ORDER+BY+watchers+DESC&maxResults=100"
 			//versions for a particular project
 		} else if proj != "" {
-			args = "jql=project+=+" + proj
+			args = proj + "/"
 		}
 
-		//fmt.Printf(api + "?" + args)
+		//fmt.Printf(api + args)
 
-		response, err := http.Get(api + "?" + args)
+		response, err := http.Get(api + args)
 		if err != nil {
 			fmt.Printf("%s", err)
 			os.Exit(1)
@@ -66,13 +66,13 @@ func ServeHTTP() {
 	var args22 string
 	var args3 string
 
-	args = "jql=project+%3D+CASSANDRA+AND+fixVersion+in+%282.1.4%2C+%222.1+beta1%22%2C+%222.1+beta2%22%2C+%222.1+rc1%22%2C+%222.1+rc2%22%2C+%222.1+rc3%22%2C+%222.1+rc4%22%2C+%222.1+rc5%22%2C+%222.1+rc6%22%2C+2.1.0%2C+2.1.1%2C+2.1.2%2C+2.1.3%29+ORDER+BY+watchers+DESC&maxResults=100"
+	args = "?jql=project+%3D+CASSANDRA+AND+fixVersion+in+%282.1.4%2C+%222.1+beta1%22%2C+%222.1+beta2%22%2C+%222.1+rc1%22%2C+%222.1+rc2%22%2C+%222.1+rc3%22%2C+%222.1+rc4%22%2C+%222.1+rc5%22%2C+%222.1+rc6%22%2C+2.1.0%2C+2.1.1%2C+2.1.2%2C+2.1.3%29+ORDER+BY+watchers+DESC&maxResults=100"
 
 	hIssues := makeRequest("https://issues.apache.org/jira/rest/api/2/search", args)
-	hVersions := makeRequest("https://issues.apache.org/jira/rest/api/2/project/CASSANDRA/", args)
+	hVersions := makeRequest("https://issues.apache.org/jira/rest/api/2/project/", args)
 
-	args22 = "jql=project+%3D+CASSANDRA+AND+fixVersion+in+(2.2.0,'2.2.0%20beta%201',2.2.x,'2.2.0%20rc1','2.2.0%20rc2',2.2.0,2.2.1)+ORDER+BY+watchers+DESC&maxResults=100"
-	args3 = "jql=project+%3D+CASSANDRA+AND+fixVersion+in+(3.0.x,'3.0%20beta%201','3.0.0%20rc1')+ORDER+BY+watchers+DESC&maxResults=100"
+	args22 = "?jql=project+%3D+CASSANDRA+AND+fixVersion+in+(2.2.0,'2.2.0%20beta%201',2.2.x,'2.2.0%20rc1','2.2.0%20rc2',2.2.0,2.2.1)+ORDER+BY+watchers+DESC&maxResults=100"
+	args3 = "?jql=project+%3D+CASSANDRA+AND+fixVersion+in+(3.0.x,'3.0%20beta%201','3.0.0%20rc1')+ORDER+BY+watchers+DESC&maxResults=100"
 	hIssues22 := makeRequest("https://issues.apache.org/jira/rest/api/2/search", args22)
 	hIssues3 := makeRequest("https://issues.apache.org/jira/rest/api/2/search", args3)
 

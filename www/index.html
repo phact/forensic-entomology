@@ -90,6 +90,9 @@ function getVersions(project){
       versionOptions.push('<option value="' + pointReleases[i]+'">' + pointReleases[i] + '</option>');
     }
 
+    $('#version-select').find('option')
+      .remove()
+      .end()
     $('#version-select').append(versionOptions.join('')).selectmenu('refresh');
 
 
