@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+</style>
+<head>
+  <link rel="stylesheet" type="text/css" href="css/fe.css">
+</head>
+<body>
+<div id="chart"></div>	
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+<script>
+
+var issues,x,x2,y,circle,svg,width,height,n,maxRadius,color,color2,force,tick
+
+function swapFields(){
+  maxRadius = 12
+	var newNodes = d3.range(n).map(function(index) {
+		var c, v, i = ""
+
+		if((typeof(issues[index].fields.assignee) !== 'undefined') && ((issues[index].fields.assignee) !== null)){
+			c = issues[index].fields.assignee.displayName
+		}
+		v = issues[index].fields.watches.watchCount
+		j = issues[index].fields.votes.votes
+		i = issues[index].fields.issuetype.name
+		return {
+			issueData: issues[index],
+			radius: (Math.sqrt(v) * maxRadius) * .2,
+			color: color(c),
+			//color: color2(i),
+			cx: x2(i),
+			//cx: x(c),
+			cy: y(j)
+			};
+		});
+
+
+		circle = svg.selectAll("circle")
+			.data(newNodes)
+			//.enter().append("circle")
+			.attr("r", function(d) { return d.radius; })
+			.style("fill", function(d) { return d.color; })
+			.on("mouseover", function(d){
+				this.style.strokeWidth = "2px"
+				this.style.stroke = d3.rgb(d.color).darker().toString() 
+			})
+			.on("mouseout", function(d){
+				this.style.stroke = ""
+			})
+			.on("click", function(d){ 
+
+				info.selectAll("p").remove()
+				info.append("p").html("Key: "+d.issueData.key)
+				info.append("p").html("Summary: "+d.issueData.fields.summary)
+				info.append("p").html("Watches: "+d.issueData.fields.watches.watchCount)
+				info.append("p").html("Votes: "+d.issueData.fields.votes.votes)
+				info.append("p").html("Type: "+d.issueData.fields.issuetype.name)
+				info.append("p").html("Priority: "+d.issueData.fields.priority.id)
+				info.append("p").html("Labels: "+JSON.stringify(d.issueData.fields.labels))
+				info.append("p").html("Reporter: "+d.issueData.fields.reporter.displayName)
+				info.append("p").html("Assignee: "+d.issueData.fields.assignee.displayName)
+			})
+			.call(force.drag).transition()
+			      .duration(750);
+}
+
+myAjaxCall = $.ajax({
+	url: "./dtcs.json",
+	context: document.body,
+	type: "GET",
+	contentType: "application/json; charset=utf-8",
+}).done(function(data) {
+
+
+	width = 1350
+	height = 700
+	var padding = 6, // separation between nodes
+	maxRadius = 12;
+
+	issues = data.issues
+
+	var issueTypes = issues.map(function(issues) { return issues.fields.issuetype.name; });
+	issueTypes = issueTypes.filter(function(v,i) { return issueTypes.indexOf(v) == i; });
+
+	var maxVotes = issues.map(function(issues){ return issues.fields.votes.votes; })
+  maxVotes = Math.max.apply(Math, maxVotes)
+
+	var issueAuthor = issues.map(function(issue,i) { 
+		if((typeof(issue.fields.assignee) !== 'undefined') && ((issue.fields.assignee) !== null)){
+			return issue.fields.assignee.displayName
+		}else{
+			issues[i].fields.assignee= { displayName : "Other"} ;
+			return "Other"
+		}	
+		});
+	issueAuthor = issueAuthor.filter(function(v,i) { return issueAuthor.indexOf(v) == i; });
+
+  var m = issueTypes.length
+
+	color = d3.scale.category20()
+	.domain(issueAuthor);
+
+	color2 = d3.scale.category10()
+	.domain(issueTypes);
+
+	x = d3.scale.ordinal()
+	.domain(issueAuthor)
+	.rangePoints([0, width], 2);
+
+
+	x2 = d3.scale.ordinal()
+	  .domain(issueTypes)
+		.rangePoints([0, width], 2);
+
+	var xAxis = d3.svg.axis()
+	    .scale(x)
+			    .orient("bottom");
+
+
+	y = d3.scale.ordinal()
+	  .domain(d3.range(maxVotes+1))
+		  .rangePoints([height, 0], 5);
+
+			var yAxis = d3.svg.axis()
+			    .scale(y)
+					    .orient("left");
+
+
+
+
+	n = issues.length-1
+	var nodes = d3.range(n).map(function(index) {
+		var c, v, i = ""
+
+		if((typeof(issues[index].fields.assignee) !== 'undefined') && ((issues[index].fields.assignee) !== null)){
+			c = issues[index].fields.assignee.displayName
+		}
+		v = issues[index].fields.watches.watchCount
+		j = issues[index].fields.votes.votes
+		i = issues[index].fields.issuetype.name
+		return {
+			issueData: issues[index],
+			radius: (Math.sqrt(v) * maxRadius) * .2,
+			//color: color(c),
+			color: color2(i),
+			//cx: x(i),
+			cx: x(c),
+			cy: y(j)
+		};
+	});
+
+	force = d3.layout.force()
+		.nodes(nodes)
+		.size([width, height])
+		.gravity(0)
+		.charge(0)
+		.on("tick", tick)
+		.start();
+
+
+	svg = d3.select("#chart").append("svg")
+		.attr("width", width)
+		.attr("height", height);
+
+
+	d3.select("#chart").append("div").attr("id","legend");
+
+		var legend = d3.select('#legend')
+		.append('ul')
+		.attr('class', 'list-inline');
+
+		var keys = legend.selectAll('li.key')
+		.data(color2.range());
+
+		keys.enter().append('li')
+		.attr('class', 'key')
+		.style('border-top-color', String)
+		.text(function(d,i) {
+			if(i >= issueTypes.length){
+				this.remove()
+			}
+			else{
+			return issueTypes[i];
+			}
+			});
+
+		
+   info = d3.select("#chart").append("div")
+	.attr("style", "position:absolute;right:220px;top:100px;right:5px;color:gray;pointer-events:none")
+	.attr("fill", "gray")
+
+	circle = svg.selectAll("circle")
+		.data(nodes)
+		.enter().append("circle")
+		.attr("r", function(d) { return d.radius; })
+		.style("fill", function(d) { return d.color; })
+		.on("mouseover", function(d){
+				this.style.strokeWidth = "2px"
+				this.style.stroke = d3.rgb(d.color).darker().toString() 
+				})
+				.on("mouseout", function(d){
+						this.style.stroke = ""
+					})
+		.on("click", function(d){ 
+			
+			info.selectAll("p").remove()
+			info.append("p").html("Key: "+d.issueData.key)
+			info.append("p").html("Summary: "+d.issueData.fields.summary)
+			info.append("p").html("Watches: "+d.issueData.fields.watches.watchCount)
+			info.append("p").html("Votes: "+d.issueData.fields.votes.votes)
+			info.append("p").html("Type: "+d.issueData.fields.issuetype.name)
+			info.append("p").html("Priority: "+d.issueData.fields.priority.id)
+			info.append("p").html("Labels: "+JSON.stringify(d.issueData.fields.labels))
+			info.append("p").html("Reporter: "+d.issueData.fields.reporter.displayName)
+			info.append("p").html("Assignee: "+d.issueData.fields.assignee.displayName)
+		})
+		.call(force.drag);
+
+	function tick(e) {
+		circle
+		.each(gravity(.2 * e.alpha))
+		.each(collide(.5))
+		.attr("cx", function(d) { return d.x; })
+		.attr("cy", function(d) { 
+			if (!isNaN(d.y)){
+				return d.y;
+			}
+			return height*.91
+		 
+		});
+	}
+
+	// Move nodes toward cluster focus.
+	function gravity(alpha) {
+		return function(d) {
+			d.y += (d.cy - d.y) * alpha;
+			d.x += (d.cx - d.x) * alpha;
+			};
+		}
+
+		// Resolve collisions between nodes.
+	function collide(alpha) {
+		var quadtree = d3.geom.quadtree(nodes);
+		return function(d) {
+			var r = d.radius + maxRadius + padding,
+			nx1 = d.x - r,
+			nx2 = d.x + r,
+			ny1 = d.y - r,
+			ny2 = d.y + r;
+			quadtree.visit(function(quad, x1, y1, x2, y2) {
+				if (quad.point && (quad.point !== d)) {
+					var x = d.x - quad.point.x,
+					y = d.y - quad.point.y,
+					l = Math.sqrt(x * x + y * y),
+					r = d.radius + quad.point.radius + (d.color !== quad.point.color) * padding;
+					if (l < r) {
+						l = (l - r) / l * alpha;
+						d.x -= x *= l;
+						d.y -= y *= l;
+						quad.point.x += x;
+						quad.point.y += y;
+					}
+				}
+				return x1 > nx2 || x2 < nx1 || y1 > ny2 || y2 < ny1;
+			});
+		};
+	}
+
+
+	svg.append("g")
+	.attr("class", "x axis")
+	.attr("transform", "translate(0," + height*.93 + ")")
+	.style("pointer-events","none")
+	.call(xAxis)
+	.selectAll(".tick text")
+	.call(wrap, x.rangeBand());
+
+
+	svg.append("g")
+	.attr("class", "y axis")
+	.attr("transform", "translate(30,0)")
+	.style("pointer-events","none")
+	.call(yAxis);
+
+	function wrap(text, width) {
+		text.each(function() {
+			var text = d3.select(this),
+			words = text.text().split(/\s+/).reverse(),
+			word,
+			line = [],
+			lineNumber = 0,
+			lineHeight = 1.1, // ems
+			y = text.attr("y"),
+			dy = parseFloat(text.attr("dy")),
+			tspan = text.text(null).append("tspan").attr("x", 0).attr("y", y).attr("dy", dy + "em");
+			while (word = words.pop()) {
+				line.push(word);
+				tspan.text(line.join(" "));
+				if (tspan.node().getComputedTextLength() > width) {
+					line.pop();
+					tspan.text(line.join(" "));
+					line = [word];
+					tspan = text.append("tspan").attr("x", 0).attr("y", y).attr("dy", ++lineNumber * lineHeight + dy + "em").text(word);
+				}
+			}
+		});
+	}	
+
+});
+
+</script>
