@@ -5,5 +5,5 @@ For the study of squashed bugs
 
     go run server.go
 
-and hit http://localhost
+and hit http://localhost:9999
 
