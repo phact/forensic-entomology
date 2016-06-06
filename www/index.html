@@ -85,7 +85,11 @@ function colorByReviewer(hideDS){
                     info.append("p").html("Reviewer: None")
                 }
 			})
-			.call(force.drag).transition().duration(750)
+            .call(force.drag)
+            .on("dblclick", function(d){
+                window.location.assign("https://issues.apache.org/jira/browse/"+d.issueData.key , '_blank');
+            })
+            .transition().duration(750)
 }
 
 function colorByAssignee(hideDS){
@@ -147,7 +151,11 @@ function colorByAssignee(hideDS){
                     info.append("p").html("Reviewer: None")
                 }
 			})
-			.call(force.drag).transition().duration(750)
+			.call(force.drag)
+            .on("dblclick", function(d){
+                window.location.assign("https://issues.apache.org/jira/browse/"+d.issueData.key , '_blank');
+            })
+            .transition().duration(750)
 }
 
 function getVersions(project){
@@ -409,7 +417,10 @@ myAjaxCall = $.ajax({
 			    info.append("p").html("Reviewer: None")
             }
 		})
-		.call(force.drag);
+        .call(force.drag)        
+        .on("dblclick", function(d){
+            window.location.assign("https://issues.apache.org/jira/browse/"+d.issueData.key , '_blank');
+        });
 
         function tick(e) {
             circle
