@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+.<!DOCTYPE html>
 <meta charset="utf-8">
 </style>
 <head>
@@ -12,14 +12,92 @@
 <script src="http://demos.jquerymobile.com/1.4.1/js/jquery.mobile-1.4.1.min.js"></script>
 <script>
 
-var issues,x,x2,y,circle,svg,width,height,n,maxRadius,color,color2,force,tick,versions,pointReleases
+var issues,x,x2,y,circle,svg,width,height,n,maxRadius,color,color2,reviewerColor,force,tick,versions,pointReleases
 
-function swapFields(){
+
+
+function colorByReviewer(hideDS){
+
+    maxRadius = 12
+
+	var newNodes = d3.range(n).map(function(index) {
+		var c, v, i, reviewer = ""
+
+		if((typeof(issues[index].fields.assignee) !== 'undefined') && ((issues[index].fields.assignee) !== null)){
+			c = issues[index].fields.assignee.displayName
+		}
+		if((typeof(issues[index].fields.customfield_10022) !== 'undefined') && ((issues[index].fields.customfield_10022) !== null)){
+            datastax = ["Branimir Lambov", "Sylvain Lebresne", "Tyler Hobbs", "Paulo Motta", "T Jake Luciani", "Ariel Weisberg", "Sam Tunnicliffe", "Marcus Eriksson", "Stefania", "Michael Shuler", "Aleksey Yeschenko", "Sergio Bossa", "Joel Knighton", "Yuki Morishita", "Carl Yeksigian", "Robert Stupp", "Benjamin Lerer", "Mike Adamson", "Alex Liu", "Jim Witschey", "Blake Eggleston", "Jeremiah Jordan", "Adam Holmberg", "Olivier Michallat", "Caleb Rackliffe", "Piotr Kołaczkowski", "Jonathan Ellis", "Brandon Williams", "Pavel Yaskevich", "Matt Stump","Chris Lofhink"]
+            if ($.inArray(issues[index].fields.customfield_10022.displayName, datastax)>0 && hideDS == true){
+                var cls = "DataStax"
+            }
+                reviewer = issues[index].fields.customfield_10022.displayName
+		}
+
+		v = issues[index].fields.watches.watchCount
+		j = issues[index].fields.votes.votes
+		i = issues[index].fields.issuetype.name
+		return {
+			issueData: issues[index],
+			radius: (Math.sqrt(v) * maxRadius) * .2,
+			color: reviewerColor(reviewer),
+			//color: color2(i),
+			cx: x2(i),
+			//cx: x(c),
+			cy: y(j),
+            class: cls
+			};
+		});
+
+
+		circle = svg.selectAll("circle")
+			.data(newNodes)
+			//.enter().append("circle")
+			.attr("r", function(d) { return d.radius; })
+			.attr("class", function(d) { return d.class; })
+			.style("fill", function(d) { 
+                //console.log(d.issueData.key)
+                //console.log(d.color)
+                return d.color;
+            })
+			.on("mouseover", function(d){
+				this.style.strokeWidth = "2px"
+				this.style.stroke = d3.rgb(d.color).darker().toString() 
+			})
+			.on("mouseout", function(d){
+				this.style.stroke = ""
+			})
+			.on("click", function(d){ 
+
+				info.selectAll("p").remove()
+				info.append("p").html("Key: "+d.issueData.key)
+				info.append("p").html("Summary: "+d.issueData.fields.summary)
+				info.append("p").html("Watches: "+d.issueData.fields.watches.watchCount)
+				info.append("p").html("Votes: "+d.issueData.fields.votes.votes)
+				info.append("p").html("Type: "+d.issueData.fields.issuetype.name)
+				info.append("p").html("Priority: "+d.issueData.fields.priority.id)
+				info.append("p").html("Labels: "+JSON.stringify(d.issueData.fields.labels))
+				info.append("p").html("Reporter: "+d.issueData.fields.reporter.displayName)
+				info.append("p").html("Assignee: "+d.issueData.fields.assignee.displayName)
+                if (d.issueData.fields.customfield_10022!= null){
+                    info.append("p").html("Reviewer: "+d.issueData.fields.customfield_10022.displayName)
+                }else{
+                    info.append("p").html("Reviewer: None")
+                }
+			})
+			.call(force.drag).transition().duration(750)
+}
+
+function colorByAssignee(hideDS){
   maxRadius = 12
 	var newNodes = d3.range(n).map(function(index) {
 		var c, v, i = ""
 
 		if((typeof(issues[index].fields.assignee) !== 'undefined') && ((issues[index].fields.assignee) !== null)){
+            datastax = ["Branimir Lambov", "Sylvain Lebresne", "Tyler Hobbs", "Paulo Motta", "T Jake Luciani", "Ariel Weisberg", "Sam Tunnicliffe", "Marcus Eriksson", "Stefania", "Michael Shuler", "Aleksey Yeschenko", "Sergio Bossa", "Joel Knighton", "Yuki Morishita", "Carl Yeksigian", "Robert Stupp", "Benjamin Lerer", "Mike Adamson", "Alex Liu", "Jim Witschey", "Blake Eggleston", "Jeremiah Jordan", "Adam Holmberg", "Olivier Michallat", "Caleb Rackliffe", "Piotr Kołaczkowski", "Jonathan Ellis", "Brandon Williams", "Pavel Yaskevich", "Matt Stump"]
+            if ($.inArray(issues[index].fields.assignee.displayName, datastax)>0 && hideDS == true){
+                var cls = "DataStax"
+            }
 			c = issues[index].fields.assignee.displayName
 		}
 		v = issues[index].fields.watches.watchCount
@@ -32,7 +110,8 @@ function swapFields(){
 			//color: color2(i),
 			cx: x2(i),
 			//cx: x(c),
-			cy: y(j)
+			cy: y(j),
+            class: cls
 			};
 		});
 
@@ -41,6 +120,7 @@ function swapFields(){
 			.data(newNodes)
 			//.enter().append("circle")
 			.attr("r", function(d) { return d.radius; })
+			.attr("class", function(d) { return d.class; })
 			.style("fill", function(d) { return d.color; })
 			.on("mouseover", function(d){
 				this.style.strokeWidth = "2px"
@@ -61,9 +141,13 @@ function swapFields(){
 				info.append("p").html("Labels: "+JSON.stringify(d.issueData.fields.labels))
 				info.append("p").html("Reporter: "+d.issueData.fields.reporter.displayName)
 				info.append("p").html("Assignee: "+d.issueData.fields.assignee.displayName)
+                if (d.issueData.fields.customfield_10022!= null){
+                    info.append("p").html("Reviewer: "+d.issueData.fields.customfield_10022.displayName)
+                }else{
+                    info.append("p").html("Reviewer: None")
+                }
 			})
-			.call(force.drag).transition()
-			      .duration(750);
+			.call(force.drag).transition().duration(750)
 }
 
 function getVersions(project){
@@ -104,6 +188,9 @@ function getVersions(project){
 }
 
 function getProjects(){
+
+
+
   myAjaxCall = $.ajax({
     url: "projects.json",
     context: document.body,
@@ -152,6 +239,7 @@ myAjaxCall = $.ajax({
 	contentType: "application/json; charset=utf-8",
 }).done(function(data) {
 
+    console.log("getting issues")
 
 	width = 1350
 	height = 700
@@ -173,20 +261,40 @@ myAjaxCall = $.ajax({
 			issues[i].fields.assignee= { displayName : "Other"} ;
 			return "Other"
 		}	
-		});
+	});
 	issueAuthor = issueAuthor.filter(function(v,i) { return issueAuthor.indexOf(v) == i; });
 
-  var m = issueTypes.length
+    reviewerMap = issues.map(function(issue, i){
+        if ((typeof(issue.fields.customfield_10022) !== 'undefined') && ((issue.fields.customfield_10022) !== null)){
+            return issue.fields.customfield_10022.displayName
+            }else{
+                issues[i].fields.customfield_10022= {displayName: "None"}
+                return "None"
+            }
+    })
+	reviewerMap = reviewerMap.filter(function(v,i) { return reviewerMap.indexOf(v) == i; });
+
+    var m = issueTypes.length
+
+	x = d3.scale.ordinal()
+	.domain(issueAuthor)
+    //.domain(reviewerMap)
+	.rangePoints([0, width], 2);
+
+    issueAuthor.push("DataStax")
+    reviewerMap.push("DataStax")
+
 
 	color = d3.scale.category20()
 	.domain(issueAuthor);
 
 	color2 = d3.scale.category10()
 	.domain(issueTypes);
+    
+    reviewerColor = d3.scale.category20()
+    .domain(reviewerMap);
 
-	x = d3.scale.ordinal()
-	.domain(issueAuthor)
-	.rangePoints([0, width], 2);
+
 
 
 	x2 = d3.scale.ordinal()
@@ -200,11 +308,11 @@ myAjaxCall = $.ajax({
 
 	y = d3.scale.ordinal()
 	  .domain(d3.range(maxVotes+1))
-		  .rangePoints([height, 0], 5);
+      .rangePoints([height, 0], 5);
 
-			var yAxis = d3.svg.axis()
-			    .scale(y)
-					    .orient("left");
+    var yAxis = d3.svg.axis()
+        .scale(y)
+        .orient("left");
 
 
 
@@ -233,7 +341,8 @@ myAjaxCall = $.ajax({
 	force = d3.layout.force()
 		.nodes(nodes)
 		.size([width, height])
-		.gravity(0)
+		.gravity(.04)
+        .friction(.1)
 		.charge(0)
 		.on("tick", tick)
 		.start();
@@ -263,8 +372,8 @@ myAjaxCall = $.ajax({
 			}
 			else{
 			return issueTypes[i];
-			}
-			});
+            }
+        });
 
 		
    info = d3.select("#chart").append("div")
@@ -276,15 +385,14 @@ myAjaxCall = $.ajax({
 		.enter().append("circle")
 		.attr("r", function(d) { return d.radius; })
 		.style("fill", function(d) { return d.color; })
-		.on("mouseover", function(d){
-				this.style.strokeWidth = "2px"
-				this.style.stroke = d3.rgb(d.color).darker().toString() 
-				})
-				.on("mouseout", function(d){
-						this.style.stroke = ""
-					})
+        .on("mouseover", function(d){
+            this.style.strokeWidth = "2px";
+            this.style.stroke = d3.rgb(d.color).darker().toString(); 
+        })
+		.on("mouseout", function(d){
+		    this.style.stroke = ""
+		})
 		.on("click", function(d){ 
-			
 			info.selectAll("p").remove()
 			info.append("p").html("Key: "+d.issueData.key)
 			info.append("p").html("Summary: "+d.issueData.fields.summary)
@@ -295,21 +403,26 @@ myAjaxCall = $.ajax({
 			info.append("p").html("Labels: "+JSON.stringify(d.issueData.fields.labels))
 			info.append("p").html("Reporter: "+d.issueData.fields.reporter.displayName)
 			info.append("p").html("Assignee: "+d.issueData.fields.assignee.displayName)
+            if (d.issueData.fields.customfield_10022 != null){
+			    info.append("p").html("Reviewer: "+d.issueData.fields.customfield_10022.displayName)
+            }else{
+			    info.append("p").html("Reviewer: None")
+            }
 		})
 		.call(force.drag);
 
-	function tick(e) {
-		circle
-		.each(gravity(.2 * e.alpha))
-		.each(collide(.5))
-		.attr("cx", function(d) { return d.x; })
-		.attr("cy", function(d) { 
-			if (!isNaN(d.y)){
-				return d.y;
-			}
-			return height*.91
-		 
-		});
+        function tick(e) {
+            circle
+                .each(gravity(e.alpha))
+                .each(collide(.1))
+                .attr("cx", function(d) { return d.x; })
+                .attr("cy", function(d) { 
+                    if (!isNaN(d.y)){
+                        return d.y;
+                    }
+                    return height*.91
+
+                });
 	}
 
 	// Move nodes toward cluster focus.
@@ -390,6 +503,15 @@ myAjaxCall = $.ajax({
 
 });
 }
+$(document).ready(function(){
+    $("#color-by-reviewer-button").on("click", function(){
+        colorByReviewer($("#ds-check").prop("checked"));
+    });
+    $("#color-by-assigned-button").on("click", function(){
+        colorByAssignee($("#ds-check").prop("checked"));
+    });
+}
+);
 
 </script>
 <div class="ui-field-contain" style= "width: 40%;
@@ -403,5 +525,25 @@ myAjaxCall = $.ajax({
   <label for="version-select">Select Version:</label>
   <select  name="version-select" id="version-select">
   </select>
+
 </div>
+<div style="position:absolute; right:10; bottom:10">
+    <div>
+        <div id="color-by-reviewer-button" style="display:inline-block"><label style="color:blue">Color by reviewer</label></div> 
+
+        <div  style="display:inline-block; margin-left:50">
+        </div>
+    </div>
+
+    <div>
+        <div id="color-by-assigned-button"  style="display:inline-block"><label style="color:blue">Color by assigned</label></div> 
+
+        <div  style="display:inline-block; margin-left:50">
+            <label for="ds-check">(hide DataStax)</label> <input type="checkbox" id="ds-check">
+        </div>
+    </div>
+    </br>
+
+</div>
+
 </body>

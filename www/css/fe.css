@@ -4,6 +4,9 @@ circle {
 .axis text {
   font: 10px sans-serif;
 }
+.DataStax{
+  fill-opacity:.3;
+}
 
 .axis path,
 .axis line {
